@@ -174,29 +174,57 @@ function renderBoard(){
  progress();
 }
 function progress(){var percent=Math.floor(state.placed/Math.max(1,state.total)*100);$('progressFill').style.width=percent+'%';$('progressText').textContent=percent+'% complete';$('remainingText').textContent=(state.total-state.placed)+' tiles left'}
-function buildDeck(){
- // Every numbered card has an exact matching number of pixels.
- // There are never unused pieces that could permanently block a slot.
- var batches=[];var seq=0;
- Object.keys(state.available).sort().forEach(function(color){
-  var left=state.available[color].length;
-  while(left){
-   var size=state.level<=5?10:state.level<=18?(seq%4===0?20:10):(seq%3===0?20:10);
-   var count=Math.min(size,left);
-   batches.push({c:color,ammo:count,id:++seq});left-=count;
-  }
- });
- // Interleave colours so the next three columns offer variety.
- var by={};batches.forEach(function(b){(by[b.c]||(by[b.c]=[])).push(b)});
- var colors=Object.keys(by).sort(function(a,b){return by[b].length-by[a].length});
- var deck=[],turn=0;
- while(deck.length<batches.length){for(var k=0;k<colors.length;k++){
-   var i=(k+turn)%colors.length,c=colors[i];if(by[c].length)deck.push(by[c].shift());
-  }turn++}
- state.pending=[[],[],[]];deck.forEach(function(b,i){state.pending[i%3].push(b)});
+// A colour is reachable only when at least one of its cells touches the open
+// edge of the picture (including cells that were already placed).
+// Work then continues inward through adjacent cells of that SAME colour.
+function isExposed(p){
+ if(!state.cells[p.key])return false;
+ return !state.cells[gridKey(p.x+1,p.y)]||!state.cells[gridKey(p.x-1,p.y)]||!state.cells[gridKey(p.x,p.y+1)]||!state.cells[gridKey(p.x,p.y-1)];
 }
+function reachable(color){
+ var cells=state.available[color]||[],seen=new Set(),queue=[],out=[];
+ for(var i=0;i<cells.length;i++){
+  var p=cells[i];if(!isExposed(p)||seen.has(p.key))continue;
+  seen.add(p.key);queue.push(p);
+ }
+ for(var at=0;at<queue.length;at++){
+  var t=queue[at];out.push(t);
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(delta){
+   var x=t.x+delta[0],y=t.y+delta[1],key=gridKey(x,y);
+   if(seen.has(key)||!state.cells[key]||!state.grid[y]||state.grid[y][x]!==color)return;
+   seen.add(key);queue.push({x:x,y:y,key:key});
+  });
+ }
+ return out;
+}
+function buildDeck(){state.pending=[[],[],[]]}
+
 function cardNode(card,active){var b=document.createElement('button');b.type='button';b.className='ammo-card'+(active?'':' preview');b.style.background='linear-gradient(160deg,#ffffff5a 0%,transparent 38%,#15132d30 100%),'+PAL[card.c];b.dataset.color=card.c;b.textContent=card.ammo;var small=document.createElement('small');small.textContent=LABEL[card.c];b.appendChild(small);b.setAttribute('aria-label',card.ammo+' '+LABEL[card.c]+' conch tiles'+(active?'':' coming next'));if(!active)b.disabled=true;return b}
-function renderSupply(){var hasFree=state.slots.indexOf(null)!==-1;cols.forEach(function(box,i){box.replaceChildren();state.pending[i].slice(0,3).forEach(function(card,j){var btn=cardNode(card,j===0);if(j===0){btn.disabled=!hasFree||state.paused||state.ended;btn.addEventListener('click',function(){choose(i)})}box.appendChild(btn)});if(!state.pending[i].length){var empty=document.createElement('div');empty.className='empty-supply';empty.textContent='ALL SENT';box.appendChild(empty)}})}
+function renderSupply(){
+ // Rebuild the visible choices from ACTUALLY exposed tiles, not every
+ // unfinished colour. One active job per colour prevents double allocation.
+ var busy=new Set(state.slots.filter(Boolean).map(function(job){return job.c}));
+ var choices=[];
+ Object.keys(state.available).forEach(function(c){
+  if(busy.has(c))return;
+  var path=reachable(c);if(!path.length)return;
+  var targetSize=state.level<=5?10:state.level<=18?10:20;
+  choices.push({c:c,ammo:Math.min(targetSize,path.length),path:path,first:path[0]});
+ });
+ // Prefer colours nearest the boundary, keeping the choices predictable.
+ choices.sort(function(a,b){return a.first.y-b.first.y||a.first.x-b.first.x||a.c.localeCompare(b.c)});
+ state.pending=[[],[],[]];choices.slice(0,3).forEach(function(card,i){state.pending[i]=[card]});
+ var hasFree=state.slots.indexOf(null)!==-1;
+ cols.forEach(function(box,i){
+  box.replaceChildren();var card=state.pending[i][0];
+  if(card){var btn=cardNode(card,true);btn.disabled=!hasFree||state.paused||state.ended;
+   btn.addEventListener('click',function(){choose(i)});box.appendChild(btn);
+  }else{var empty=document.createElement('div');empty.className='empty-supply';
+   empty.textContent=state.placed===state.total?'ALL SENT':'COVERED';
+   empty.setAttribute('aria-label','No exposed colour available in position '+(i+1));box.appendChild(empty)}
+ });
+}
+
 function renderSlots(){var count=0;slots.forEach(function(node,i){node.replaceChildren();var job=state.slots[i];node.className='slot'+(job?' active':'');node.style.removeProperty('--slot-col');if(!job){node.setAttribute('aria-label','Empty conch position '+(i+1));return}count++;node.style.setProperty('--slot-col',PAL[job.c]);var icon=document.createElement('span');icon.className='slot-icon';icon.textContent='🐚';var n=document.createElement('span');n.className='slot-number';n.textContent=job.ammo;node.append(icon,n);node.setAttribute('aria-label','Conch '+(i+1)+': '+job.ammo+' '+LABEL[job.c]+' tiles remaining')});$('slotStatus').textContent=count+' / 5'}
 function createWorker(index,job){var e=document.createElement('div');e.className='worker';e.style.setProperty('--cargo',PAL[job.c]);e.innerHTML=conchSVG;e.dataset.slot=index;workerLayer.appendChild(e);job.worker=e;var from=slotCenter(index);e.style.left=from.x+'px';e.style.top=from.y+'px';return e}
 function slotCenter(i){var a=slots[i].getBoundingClientRect(),g=$('game').getBoundingClientRect();return {x:a.left-g.left+a.width*.5,y:a.top-g.top+a.height*.5}}
@@ -206,40 +234,44 @@ function choose(column){
  if(state.ended||state.paused)return;
  var ix=state.slots.indexOf(null);
  if(ix===-1){announce('Five conchs are already working.');return}
- var card=state.pending[column].shift();if(!card)return;
- var job={c:card.c,ammo:card.ammo,id:card.id,worker:null,last:null,slot:ix};
+ var card=state.pending[column]&&state.pending[column][0];if(!card)return;
+ if(state.slots.some(function(j){return j&&j.c===card.c}))return;
+ // Recheck at the moment of selection, to prevent using a stale offer.
+ var path=reachable(card.c);if(!path.length){renderSupply();return}
+ var count=Math.min(card.ammo,path.length);
+ var job={c:card.c,ammo:count,id:card.c+':'+state.placed,worker:null,last:null,slot:ix,plan:path.slice(0,count)};
  state.slots[ix]=job;createWorker(ix,job);renderSlots();renderSupply();
  if(state.slots.every(Boolean))setHint('All five conchs are working. Wait for a job to finish.',true);
  schedule(function(){deliver(job)},65);
 }
+
 function findTarget(job){
- // Reserve tiles before travelling to prevent two workers claiming the same square.
- var arr=state.available[job.c]||[],best=null,bestScore=Infinity;
- var origin=job.last||{x:Math.floor(DATA[state.level-1].art[0].length/2),y:DATA[state.level-1].art.length+2};
- // Prioritise close neighbours so the conch visibly crawls from tile to tile.
- for(var i=0;i<arr.length;i++){
-  var p=arr[i];if(state.reserved.has(p.key)||!state.cells[p.key])continue;
-  var cost=Math.abs(p.x-origin.x)+Math.abs(p.y-origin.y)*1.12;
-  if(cost<bestScore){best=p;bestScore=cost}
+ // A job follows its pre-validated outside-in route. Interior colours
+ // cannot be selected until the outline bordering them has been placed.
+ while(job.plan.length){
+  var p=job.plan.shift();if(!state.cells[p.key]||state.reserved.has(p.key))continue;
+  if(!isExposed(p)){job.plan.unshift(p);return null}
+  state.reserved.add(p.key);return p;
  }
- if(best)state.reserved.add(best.key);
- return best;
+ return null;
 }
+
 function paint(job,target){
  if(!state.reserved.has(target.key))return;
  state.reserved.delete(target.key);
  var cell=state.cells[target.key];if(!cell)return;
  cell.setAttribute('class','cell-placed place-shine');cell.setAttribute('fill',PAL[job.c]);cell.removeAttribute('style');
  delete state.cells[target.key];state.placed++;job.ammo--;job.last=target;
- renderSlots();progress();
+ renderSlots();progress();renderSupply();
 }
+
 function deliver(job){
  if(state.ended||state.slots[job.slot]!==job)return;
  if(state.paused){schedule(function(){deliver(job)},85);return}
  if(job.ammo===0){goHome(job);return}
  var target=findTarget(job);
  if(!target){
-  // Another worker may temporarily be travelling to the last available tile.
+  // Wait for previously assigned neighbouring tiles to become exposed.
   schedule(function(){deliver(job)},95);return
  }
  var duration=Math.max(60,360/state.speed);
@@ -261,7 +293,7 @@ function win(){if(state.ended)return;state.ended=true;state.paused=false;state.r
 function scheduleUntracked(fn,delay){setTimeout(fn,delay)}
 function reset(level){
  cancelAll();state.ended=false;state.paused=false;state.slots=[null,null,null,null,null];state.level=Math.max(1,Math.min(DATA.length,level));workerLayer.replaceChildren();overlay.hidden=true;
- renderBoard();buildDeck();renderSlots();renderSupply();setHint('Tap a numbered colour to send out a queen conch.',false)
+ renderBoard();buildDeck();renderSlots();renderSupply();setHint('Clear the outer tiles first to reveal colours underneath.',false)
 }
 function action(label,fn,secondary){var b=document.createElement('button');b.textContent=label;if(secondary)b.className='secondary';b.addEventListener('click',fn);$('dialogActions').appendChild(b);return b}
 function closeDialog(){overlay.hidden=true;state.paused=false;renderSupply()}
@@ -276,7 +308,7 @@ function openDialog(type){state.paused=true;renderSupply();overlay.hidden=false;
   var sel=document.createElement('select');sel.setAttribute('aria-label','Select unlocked level');for(var n=1;n<=state.unlocked;n++){var o=document.createElement('option');o.value=n;o.textContent='Level '+n+' · '+DATA[n-1].name;if(n===state.level)o.selected=true;sel.appendChild(o)}actions.appendChild(sel);
   action('Play selected level',function(){reset(Number(sel.value))});action('Back',closeDialog,true);
  } else {
-  $('dialogTitle').textContent='How to play';$('dialogBody').textContent='Pick a numbered colour to send a queen conch. It crawls to the picture and places one tile at a time. You can run only FIVE conchs at once. A conch keeps its slot until its number reaches zero. Speed up their crawl with the ▶▶ button. Complete every tile to win.';
+  $('dialogTitle').textContent='How to play';$('dialogBody').textContent='Only exposed colours can be picked. Clear the outer outline to uncover the colours behind it. Pick a numbered colour to send a queen conch. It crawls to the picture and places one tile at a time. You can run only FIVE conchs at once. A conch keeps its slot until its number reaches zero. Speed up their crawl with the ▶▶ button. Complete every tile to win.';
   action('Continue playing',closeDialog);
   action('Choose a level',function(){openDialog('levels')},true);
   action('Restart level',function(){reset(state.level)},true);
@@ -288,11 +320,10 @@ $('speedButton').addEventListener('click',function(){state.speed=state.speed===3
 window.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!overlay.hidden&& !state.ended){closeDialog();return}if(state.paused||state.ended)return;if(/^[123]$/.test(ev.key))choose(Number(ev.key)-1);if(ev.key==='r')reset(state.level)});
 window.addEventListener('resize',function(){state.slots.forEach(function(job){if(!job||!job.worker)return;job.worker.style.transitionDuration='0ms';if(job.last)moveWorker(job.worker,cellCenter(job.last),0);else moveWorker(job.worker,slotCenter(job.slot),0)})});
 // Small deterministic testing interface, does not affect normal gameplay.
-window.__conchTest={state:function(){return {level:state.level,placed:state.placed,total:state.total,slots:state.slots.map(function(j){return j&&{c:j.c,ammo:j.ammo,id:j.id}}),columns:state.pending.map(function(col){return col.length}),speed:state.speed,ended:state.ended,paused:state.paused,unlocked:state.unlocked,reserved:state.reserved.size}},choose:choose,setLevel:function(n){reset(n)},speed:function(n){state.speed=Math.max(1,Math.min(3,n));$('speedText').textContent=state.speed+'×'},tileCount:function(){return Object.keys(state.cells).length},advanceFull:function(){state.slots.forEach(function(j){if(j&&j.worker)j.worker.remove()});state.slots=[null,null,null,null,null];state.placed=state.total;progress();win()},data:function(){return DATA}};
+window.__conchTest={state:function(){return {level:state.level,placed:state.placed,total:state.total,slots:state.slots.map(function(j){return j&&{c:j.c,ammo:j.ammo,id:j.id}}),columns:state.pending.map(function(col){return col.length}),speed:state.speed,ended:state.ended,paused:state.paused,unlocked:state.unlocked,reserved:state.reserved.size,offers:state.pending.map(function(col){return col[0]&&{c:col[0].c,ammo:col[0].ammo}})}},choose:choose,setLevel:function(n){reset(n)},speed:function(n){state.speed=Math.max(1,Math.min(3,n));$('speedText').textContent=state.speed+'×'},tileCount:function(){return Object.keys(state.cells).length},exposed:function(c){return reachable(c).length},isExposed:function(x,y){return isExposed({x:x,y:y,key:gridKey(x,y)})},advanceFull:function(){state.slots.forEach(function(j){if(j&&j.worker)j.worker.remove()});state.slots=[null,null,null,null,null];state.placed=state.total;progress();win()},data:function(){return DATA}};
 if(!DATA.length){$('artTitle').textContent='No levels found';$('hint').textContent='The levels.js file did not load.';return}
 state.unlocked=load();reset(1);
 })();
-
 </script>
 </body>
 </html>
