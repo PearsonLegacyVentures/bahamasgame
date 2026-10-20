@@ -11,11 +11,12 @@ A mobile-first Bahamian pixel-art puzzle. Little animated queen conchs crawl to 
 
 ## Rules
 
-1. Tap a numbered color card; it occupies one of **five holding slots**.
-2. A queen conch crawls out and places one matching-colored tile at a time.
-3. Each tile reduces the card's count by one. That slot stays occupied until the count reaches zero and the conch returns.
-4. **You cannot select a sixth card** while all five slots are full. Slots are reusable when freed.
-5. Tap speed to switch between **1×, 2×, and 3×**. Complete the picture to unlock the next level; progress saves in the browser.
+1. **All upcoming numbered colour cards remain visible** in three vertically scrollable stacks, so you can plan ahead. Only the **top card** of each stack can be tapped, and its first picture tile must be exposed.
+2. Tap an exposed top card; it occupies one of **five holding slots**.
+3. A queen conch crawls out and places one matching-colored tile at a time.
+4. Each tile reduces the card's count by one. That slot stays occupied until the count reaches zero and the conch returns.
+5. **You cannot select a sixth card** while all five slots are full. Slots are reusable when freed.
+6. Tap speed to switch between **1×, 2×, and 3×**. Complete the picture to unlock the next level; progress saves in the browser.
 
 Difficulty increases through picture size, detail, tile count and more color variation—not complicated new rules.
 
@@ -42,3 +43,7 @@ Artwork is original, stylized Bahamian-themed pixel art. This is a new game insp
 ## Exposed colour rule
 
 Colours completely covered by unfinished outer tiles are not selectable. A queen conch works only from the exposed edge inward; as it finishes the outer outline, new colours become available automatically. Each active colour has one conch so jobs cannot claim the same tiles.
+
+## Visible queues
+
+All future cards are displayed in three scrollable stacks. Preview cards cannot be selected until they reach the top. A top card whose first pixel is still covered remains visible but temporarily disabled. The conch completes a preplanned outside-in delivery path and frees its active slot when finished.
