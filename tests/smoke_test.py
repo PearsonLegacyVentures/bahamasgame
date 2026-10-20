@@ -13,13 +13,21 @@ async def run():
    start=await page.evaluate('window.__conchTest.state()')
    assert start['total']>200 and len(start['slots'])==5
    assert await page.locator('.cell-base').count()==start['total']
-   assert await page.locator('.ammo-card:not(.preview)').count()==1
+   assert await page.locator('.ammo-card:not(.preview)').count()==3
+   assert await page.locator('.ammo-card.preview').count()>3
+   assert await page.locator('.ammo-card.preview:not([disabled])').count()==0
+   assert sum(sum(card['ammo'] for card in col) for col in start['queue'])==start['total']
    assert await page.evaluate('window.__conchTest.exposed("A")')==0
    assert await page.evaluate('window.__conchTest.exposed("Y")')==0
    if w==390:
+    assert start['offers'][1]['ready']==False
+    before_locked=await page.evaluate('window.__conchTest.state()')
+    await page.evaluate('window.__conchTest.choose(1)')
+    assert (await page.evaluate('window.__conchTest.state()'))['columns']==before_locked['columns']
     await page.locator('.ammo-card:not(.preview)').first.click()
     before=await page.evaluate('window.__conchTest.state()')
-    assert before['slots'][0]['c']=='X'
+    assert before['slots'][0]['c']=='X' and before['columns'][0]==start['columns'][0]-1
+    assert before['queue'][0][0]['id']==3
     await page.evaluate('window.__conchTest.choose(1)')
     after=await page.evaluate('window.__conchTest.state()')
     assert sum(after['columns'])==sum(before['columns'])
