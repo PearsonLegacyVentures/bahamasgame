@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1, user-scalable=no">
+ <meta name="theme-color" content="#e8b381">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="default">
+ <meta name="description" content="Conch Crawl — a playful Bahamian pixel puzzle. Send your queen conchs to colour 30 iconic island scenes.">
+ <title>Conch Crawl · Bahamas Games</title>
+ <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+ <main id="game" aria-label="Conch Crawl, a Bahamas puzzle game">
+  <div class="wood-grain" aria-hidden="true"></div>
+  <header class="top-bar">
+   <button class="icon-button" id="settingsButton" type="button" aria-label="Game settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.75l1.47 2.37 2.77.46.9 2.63 2.35 1.5-.49 2.71.49 2.71-2.35 1.5-.9 2.63-2.77.46L12 22.25l-1.47-2.37-2.77-.46-.9-2.63-2.35-1.5.49-2.71-.49-2.71 2.35-1.5.9-2.63 2.77-.46L12 2.75z" fill="currentColor" stroke="white" stroke-width=".8"/><circle cx="12" cy="12.5" r="3.2" fill="#59416f"/></svg></button>
+   <div class="level-group"><small>BAHAMAS GAMES</small><div id="levelLabel" class="level-label">LEVEL 1</div></div>
+   <button id="speedButton" class="speed-button" aria-label="Conch speed, currently 1 times">▶▶ <span id="speedText">1×</span></button>
+  </header>
+  <section class="art-panel" aria-label="Pixel artwork to complete">
+   <div class="art-panel-inner">
+    <div class="board-head"><div class="board-kicker">ISLAND COLLECTION <span id="chapterLabel">· DISCOVER</span></div><h1 id="artTitle">Bahamian Flag</h1><p id="artCaption">Black. Gold. Aquamarine.</p></div>
+    <div class="art-container"><svg id="board" role="img" aria-label="Puzzle board" viewBox="0 0 32 26" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="panel-foot"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="progress-copy"><span id="progressText">0% complete</span><span id="remainingText">0 tiles left</span></div></div>
+   </div>
+  </section>
+  <div class="conch-runway" aria-hidden="true"><span class="runway-line"></span><span class="runway-label">CONCH CROSSING</span><span class="runway-line"></span></div>
+  <div id="workers" class="worker-layer" aria-hidden="true"></div>
+  <section class="dock" aria-label="Five active conch positions">
+   <div class="dock-caption"><span>ACTIVE CONCHS</span><span id="slotStatus">0 / 5</span></div>
+   <div id="slots" class="slots">
+    <div class="slot" data-slot="0"></div><div class="slot" data-slot="1"></div><div class="slot" data-slot="2"></div><div class="slot" data-slot="3"></div><div class="slot" data-slot="4"></div>
+   </div>
+   <div class="dock-help" id="hint" aria-live="polite">Choose a colour. Your conch will carry tiles to the picture.</div>
+  </section>
+  <section class="supply-area" aria-label="Available numbered colours">
+   <div class="supply-head"><span>CHOOSE YOUR COLOURS</span><span>Only 5 at a time</span></div>
+   <div class="supply-columns" id="supplyColumns"><div class="supply-column"></div><div class="supply-column"></div><div class="supply-column"></div></div>
+  </section>
+  <footer class="bottom-bar"><span class="logo-mark"><span class="logo-icon">✺</span> BAHAMAS GAMES</span><button class="restart-mini" id="restartButton" type="button">↻ Restart</button></footer>
+  <div id="dialogBackdrop" class="dialog-backdrop" role="presentation" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog-illustration" id="dialogIcon">🐚</div><h2 id="dialogTitle"></h2><p id="dialogBody"></p><div class="dialog-actions" id="dialogActions"></div></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+ </main>
+ <script src="levels.js"></script>
+ <script src="game.js"></script>
+</body>
+</html>
