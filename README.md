@@ -1,49 +1,35 @@
 # Conch Crawl — Bahamas Games
 
-A mobile-first Bahamian pixel-art puzzle. Little animated queen conchs crawl to an image and place matching tiles. 30 levels, progressively denser art, and simple rules.
+An original Bahamian pixel-fill puzzle with animated queen conch workers, 30 levels, visible future color queues, linked two-color blocks, and five reusable conch slots.
 
-## Play / deploy
+## Play and deploy
 
-- **`index.html` is the complete, self-contained game.** It has CSS, scripts, all 30 levels, and the queen conch sprite inlined. No install, login, or API required.
-- **`play.html` is the editable modular entry point**, loading `styles.css`, `levels.js`, and `game.js`.
-- For Cloudflare Pages, choose framework **None**, leave build command blank, and use `/` as the output directory. Deploy only after reviewing settings.
-- To test locally, use `python3 -m http.server 8000` and visit `http://localhost:8000/play.html`.
+- **`index.html`** is the complete self-contained version for Cloudflare Pages. No build or API needed.
+- **`play.html`**, `styles.css`, `game.js`, and `levels.js` are editable source files.
+- Cloudflare Pages: framework **None**, no build command, output directory `/`.
+- Local test: `python3 -m http.server 8000`, then visit `http://localhost:8000/play.html`.
 
 ## Rules
 
-1. **All upcoming numbered colour cards remain visible** in three vertically scrollable stacks, so you can plan ahead. Only the **top card** of each stack can be tapped, and its first picture tile must be exposed.
-2. Tap an exposed top card; it occupies one of **five holding slots**.
-3. A queen conch crawls out and places one matching-colored tile at a time.
-4. Each tile reduces the card's count by one. That slot stays occupied until the count reaches zero and the conch returns.
-5. **You cannot select a sixth card** while all five slots are full. Slots are reusable when freed.
-6. Tap speed to switch between **1×, 2×, and 3×**. Complete the picture to unlock the next level; progress saves in the browser.
+1. All upcoming numbered color blocks remain visible beneath their stack's first card. Scroll to see future blocks.
+2. **Only the top block in each stack can be selected**, and it must have an exposed tile on the artwork. Enclosed colors become available only as outer layers are completed.
+3. Every selection reserves a holding slot and starts a crawling queen conch, which places tiles one at a time. A slot is released after that block's count reaches zero.
+4. **Linked double-choice blocks** (introduced in Level 8) are connected visually. Tapping either one selects **both together**, starts **two conchs**, and requires **two free holding slots**. The conchs complete independently and release their own slots.
+5. There are always **five holding slots**, even on advanced levels. Players cannot start more work than the available slots allow.
+6. Levels 1–11 use **three preview stacks**. Levels 12–30 use **four stacks**, matching the reference's advanced queue layout.
+7. Speed cycles through 1×, 2×, and 3×. Level progress is saved locally in the browser.
 
-Difficulty increases through picture size, detail, tile count and more color variation—not complicated new rules.
+Difficulty increases primarily with the size, colors, and pixel detail of the Bahamian scenes, not additional rules.
 
 ## Files
 
-- `index.html` — offline-capable standalone playable version (recommended entry point).
-- `play.html`, `styles.css`, `game.js`, `levels.js` — editable website source.
-- `levels.json` — all 30 expanded level grids.
-- `source-levels.json`, `build_levels.py` — original templates + script that prepares more detailed level grids.
-- `tests/` — Playwright smoke and real gameplay-completion tests.
+- `index.html`: complete no-dependencies release file.
+- `play.html`, `styles.css`, `game.js`, `levels.js`: modular sources.
+- `levels.json`, `source-levels.json`, `build_levels.py`: level sources and art generation.
+- `tests/smoke_test.py`, `tests/end_to_end.py`, `tests/linked_pairs.py`: browser checks.
 
-## Verified locally
+## Testing
 
-- Responsive rendering in Chromium at 320×568, 390×844 and 768×1024.
-- No JavaScript errors during viewport tests.
-- Strict five-conch cap, occupied slots while working, slot release, pixel placement and speed adjustment.
-- Normal Level 1 playthrough, victory popup, level unlock and movement to Level 2.
-- Levels 15 and 30 render (over 700 and 1,400 tiles respectively).
+Verified in Chromium at 320×568, 390×844 and 768×1024, including Level 20 pair selection. All 30 levels passed card-count and pair-integrity checks, and a real Level 20 double choice reserved two holding slots and delivered tiles without JavaScript errors. This is **not** a claim of testing the live deployed website or a physical iPhone.
 
-**Not yet verified:** gameplay on a physical iPhone or a live Cloudflare/GitHub Pages deployment.
-
-Artwork is original, stylized Bahamian-themed pixel art. This is a new game inspired by a genre, not an exact copy of another game's engine.
-
-## Exposed colour rule
-
-Colours completely covered by unfinished outer tiles are not selectable. A queen conch works only from the exposed edge inward; as it finishes the outer outline, new colours become available automatically. Each active colour has one conch so jobs cannot claim the same tiles.
-
-## Visible queues
-
-All future cards are displayed in three scrollable stacks. Preview cards cannot be selected until they reach the top. A top card whose first pixel is still covered remains visible but temporarily disabled. The conch completes a preplanned outside-in delivery path and frees its active slot when finished.
+Art and queen conch sprites are original, stylized Bahamian interpretations, not extracted content from the reference game recording.
