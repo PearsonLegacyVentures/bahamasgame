@@ -18,7 +18,7 @@ async def main():
     for i in range(3):
      s=await page.evaluate('window.__conchTest.state()')
      if all(x is not None for x in s['slots']):break
-     if s['columns'][i]: await page.locator('.supply-column').nth(i).locator('.ammo-card:not(.preview)').click()
+     if s['offers'][i] and s['offers'][i]['ready']: await page.locator('.supply-column').nth(i).locator('.ammo-card:not(.preview)').click()
    await page.wait_for_timeout(125)
   s=await page.evaluate('window.__conchTest.state()')
   assert s['ended'] and s['placed']==s['total'],(step,s)
