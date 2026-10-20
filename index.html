@@ -59,17 +59,17 @@ button:focus-visible{outline:3px solid #047d9d;outline-offset:3px}
 .slot .slot-number{position:absolute;bottom:4px;right:7px;color:white;text-shadow:1px 1px #3c3848,-1px 1px #3c3848;font-size:clamp(11px,3vw,16px);z-index:1}
 .slot .slot-icon{font-size:clamp(16px,4vw,24px);filter:drop-shadow(0 1px 1px #45394855);z-index:1;transform:rotate(-20deg)}
 .dock-help{text-align:center;margin-top:7px;font-size:clamp(9px,2vw,12px);font-weight:700;color:#9c7266;min-height:14px}
-.supply-area{position:absolute;left:14%;right:14%;top:76%;height:17.8%}
+.supply-area{position:absolute;left:11%;right:11%;top:75.3%;height:19.8%}
 .supply-head{margin-bottom:7px}
 .supply-head span:last-child{letter-spacing:0;color:#a17b68;font-size:clamp(8px,2vw,10px)}
-.supply-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9%;height:89%}
-.supply-column{display:flex;flex-direction:column;gap:7px;min-width:0}
-.ammo-card{position:relative;flex:1;max-height:34%;display:flex;align-items:center;justify-content:center;border-radius:15px;color:white;box-shadow:inset 0 -8px 5px #33304842,inset 0 4px 3px #fff9,0 4px 4px #7f565e80,0 0 0 3px #f5eeed;border:2px solid #fff;text-shadow:-1px -2px #373849,1px 2px #373849;font-size:clamp(19px,6vw,29px);font-weight:1000;transition:transform .12s,filter .12s,opacity .12s}
+.supply-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7%;height:87%;min-height:0}
+.supply-column{display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:3px 4px 7px;scrollbar-width:thin;scrollbar-color:#b98a73 transparent}
+.ammo-card{position:relative;flex:0 0 auto;height:clamp(34px,5.4svh,56px);width:100%;display:flex;align-items:center;justify-content:center;border-radius:15px;color:white;box-shadow:inset 0 -8px 5px #33304842,inset 0 4px 3px #fff9,0 4px 4px #7f565e80,0 0 0 3px #f5eeed;border:2px solid #fff;text-shadow:-1px -2px #373849,1px 2px #373849;font-size:clamp(19px,6vw,29px);font-weight:1000;transition:transform .12s,filter .12s,opacity .12s}
 .ammo-card:before{position:absolute;content:"";height:10%;top:9%;left:16%;right:16%;background:#fffb;border-radius:90px}
 .ammo-card small{position:absolute;bottom:3px;font-size:clamp(6px,1.5vw,9px);font-weight:1000;letter-spacing:.03em;text-transform:uppercase;text-shadow:0 1px #4448}
 .ammo-card:active:not(:disabled){transform:translateY(2px) scale(.97)}
 .ammo-card:disabled{opacity:.34;filter:grayscale(.45);cursor:not-allowed}
-.ammo-card.preview{opacity:.47;box-shadow:inset 0 -6px 4px #3c334733,0 2px 3px #8b686255;border-color:#e4d3ce;filter:saturate(.74);cursor:default}
+.ammo-card.preview{opacity:.65;box-shadow:inset 0 -6px 4px #3c334733,0 2px 3px #8b686255;border-color:#e4d3ce;filter:saturate(.74);cursor:default}
 .ammo-card.preview:before{opacity:.5}
 .empty-supply{border:2px dashed #ce9c78;border-radius:14px;opacity:.35;min-height:25%;display:grid;place-items:center;font-size:12px}
 .bottom-bar{position:absolute;bottom:0;left:0;right:0;height:4.9%;display:flex;justify-content:space-between;align-items:center;padding:0 7%;background:linear-gradient(#aa9bc1,#8573aa 60%,#74618f);box-shadow:0 -3px 9px #67467371;color:white;z-index:4}
@@ -88,6 +88,8 @@ button:focus-visible{outline:3px solid #047d9d;outline-offset:3px}
 @media(max-height:670px){.top-bar{top:2.3%}.art-panel{top:10%;height:43.4%}.conch-runway{top:56%}.dock{top:59%}.supply-area{top:75%;height:19%}.dock-help{margin-top:4px}.supply-column{gap:4px}.supply-head,.dock-caption{margin-bottom:3px}}
 @media(min-width:481px){#game{height:min(100dvh,1000px);border-radius:0}body{padding:0}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important}}
+.ammo-card.buried{opacity:.63;filter:saturate(.8);cursor:not-allowed}
+.supply-column::-webkit-scrollbar{width:3px}.supply-column::-webkit-scrollbar-thumb{background:#b98a73;border-radius:12px}
 
 </style>
 </head>
@@ -116,7 +118,7 @@ button:focus-visible{outline:3px solid #047d9d;outline-offset:3px}
    <div class="dock-help" id="hint" aria-live="polite">Choose a colour. Your conch will carry tiles to the picture.</div>
   </section>
   <section class="supply-area" aria-label="Available numbered colours">
-   <div class="supply-head"><span>CHOOSE YOUR COLOURS</span><span>Only 5 at a time</span></div>
+   <div class="supply-head"><span>CHOOSE YOUR COLOURS</span><span>Top card only · scroll ↓</span></div>
    <div class="supply-columns" id="supplyColumns"><div class="supply-column"></div><div class="supply-column"></div><div class="supply-column"></div></div>
   </section>
   <footer class="bottom-bar"><span class="logo-mark"><span class="logo-icon">✺</span> BAHAMAS GAMES</span><button class="restart-mini" id="restartButton" type="button">↻ Restart</button></footer>
@@ -197,31 +199,62 @@ function reachable(color){
  }
  return out;
 }
-function buildDeck(){state.pending=[[],[],[]]}
+// The full supply is precomputed from the outside inward. Preview cards stay
+// visible for planning even when their colour is currently covered.
+function virtualReachable(color,remaining){
+ var cells=state.available[color]||[],seen=new Set(),queue=[],out=[];
+ for(var i=0;i<cells.length;i++){
+  var p=cells[i];if(!remaining.has(p.key))continue;
+  if(remaining.has(gridKey(p.x+1,p.y))&&remaining.has(gridKey(p.x-1,p.y))&&remaining.has(gridKey(p.x,p.y+1))&&remaining.has(gridKey(p.x,p.y-1)))continue;
+  seen.add(p.key);queue.push(p);
+ }
+ for(var at=0;at<queue.length;at++){
+  var t=queue[at];out.push(t);
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(delta){
+   var x=t.x+delta[0],y=t.y+delta[1],key=gridKey(x,y);
+   if(seen.has(key)||!remaining.has(key)||!state.grid[y]||state.grid[y][x]!==color)return;
+   seen.add(key);queue.push({x:x,y:y,key:key});
+  });
+ }
+ return out;
+}
+function buildDeck(){
+ var remaining=new Set(Object.keys(state.cells)),colors=Object.keys(state.available).sort();
+ var targetSize=state.level<=18?10:20,last=-1,serial=0;
+ state.pending=[[],[],[]];
+ while(remaining.size){
+  var chosen=null,path=null,colorIndex=-1;
+  for(var t=1;t<=colors.length;t++){
+   var ix=(last+t)%colors.length,c=colors[ix],candidate=virtualReachable(c,remaining);
+   if(candidate.length){chosen=c;path=candidate;colorIndex=ix;break}
+  }
+  if(!path||!path.length)throw Error('Unreachable coloured tiles in level '+state.level);
+  var plan=path.slice(0,targetSize);
+  plan.forEach(function(tile){remaining.delete(tile.key)});
+  var card={id:serial,c:chosen,ammo:plan.length,plan:plan};
+  state.pending[serial%3].push(card);serial++;last=colorIndex;
+ }
+}
 
 function cardNode(card,active){var b=document.createElement('button');b.type='button';b.className='ammo-card'+(active?'':' preview');b.style.background='linear-gradient(160deg,#ffffff5a 0%,transparent 38%,#15132d30 100%),'+PAL[card.c];b.dataset.color=card.c;b.textContent=card.ammo;var small=document.createElement('small');small.textContent=LABEL[card.c];b.appendChild(small);b.setAttribute('aria-label',card.ammo+' '+LABEL[card.c]+' conch tiles'+(active?'':' coming next'));if(!active)b.disabled=true;return b}
 function renderSupply(){
- // Rebuild the visible choices from ACTUALLY exposed tiles, not every
- // unfinished colour. One active job per colour prevents double allocation.
- var busy=new Set(state.slots.filter(Boolean).map(function(job){return job.c}));
- var choices=[];
- Object.keys(state.available).forEach(function(c){
-  if(busy.has(c))return;
-  var path=reachable(c);if(!path.length)return;
-  var targetSize=state.level<=5?10:state.level<=18?10:20;
-  choices.push({c:c,ammo:Math.min(targetSize,path.length),path:path,first:path[0]});
- });
- // Prefer colours nearest the boundary, keeping the choices predictable.
- choices.sort(function(a,b){return a.first.y-b.first.y||a.first.x-b.first.x||a.c.localeCompare(b.c)});
- state.pending=[[],[],[]];choices.slice(0,3).forEach(function(card,i){state.pending[i]=[card]});
  var hasFree=state.slots.indexOf(null)!==-1;
  cols.forEach(function(box,i){
-  box.replaceChildren();var card=state.pending[i][0];
-  if(card){var btn=cardNode(card,true);btn.disabled=!hasFree||state.paused||state.ended;
-   btn.addEventListener('click',function(){choose(i)});box.appendChild(btn);
-  }else{var empty=document.createElement('div');empty.className='empty-supply';
-   empty.textContent=state.placed===state.total?'ALL SENT':'COVERED';
-   empty.setAttribute('aria-label','No exposed colour available in position '+(i+1));box.appendChild(empty)}
+  var scroll=box.scrollTop;box.replaceChildren();
+  var col=state.pending[i];
+  col.forEach(function(card,j){
+   var top=j===0,ready=!!(card.plan[0]&&isExposed(card.plan[0]));
+   var btn=cardNode(card,top);
+   if(top){
+    btn.disabled=!hasFree||!ready||state.paused||state.ended;
+    if(!ready){btn.classList.add('buried');btn.title='Clear the covering tiles first'}
+    btn.setAttribute('aria-label',card.ammo+' '+LABEL[card.c]+' tiles, '+(ready?'top of stack':'covered on the picture'));
+    btn.addEventListener('click',function(){choose(i)});
+   }
+   box.appendChild(btn);
+  });
+  if(!col.length){var empty=document.createElement('div');empty.className='empty-supply';empty.textContent='DONE';box.appendChild(empty)}
+  box.scrollTop=Math.min(scroll,Math.max(0,box.scrollHeight-box.clientHeight));
  });
 }
 
@@ -234,13 +267,12 @@ function choose(column){
  if(state.ended||state.paused)return;
  var ix=state.slots.indexOf(null);
  if(ix===-1){announce('Five conchs are already working.');return}
- var card=state.pending[column]&&state.pending[column][0];if(!card)return;
- if(state.slots.some(function(j){return j&&j.c===card.c}))return;
- // Recheck at the moment of selection, to prevent using a stale offer.
- var path=reachable(card.c);if(!path.length){renderSupply();return}
- var count=Math.min(card.ammo,path.length);
- var job={c:card.c,ammo:count,id:card.c+':'+state.placed,worker:null,last:null,slot:ix,plan:path.slice(0,count)};
- state.slots[ix]=job;createWorker(ix,job);renderSlots();renderSupply();
+ var col=state.pending[column],card=col&&col[0];if(!card)return;
+ if(!card.plan.length||!isExposed(card.plan[0])){announce('Clear the covering tiles first.');return}
+ col.shift();
+ var job={c:card.c,ammo:card.ammo,id:card.id,worker:null,last:null,slot:ix,plan:card.plan.slice()};
+ state.slots[ix]=job;createWorker(ix,job);renderSlots();
+ cols[column].scrollTop=0;renderSupply();
  if(state.slots.every(Boolean))setHint('All five conchs are working. Wait for a job to finish.',true);
  schedule(function(){deliver(job)},65);
 }
@@ -293,7 +325,7 @@ function win(){if(state.ended)return;state.ended=true;state.paused=false;state.r
 function scheduleUntracked(fn,delay){setTimeout(fn,delay)}
 function reset(level){
  cancelAll();state.ended=false;state.paused=false;state.slots=[null,null,null,null,null];state.level=Math.max(1,Math.min(DATA.length,level));workerLayer.replaceChildren();overlay.hidden=true;
- renderBoard();buildDeck();renderSlots();renderSupply();setHint('Clear the outer tiles first to reveal colours underneath.',false)
+ renderBoard();buildDeck();renderSlots();renderSupply();setHint('Top blocks only. Scroll to see what’s next.',false)
 }
 function action(label,fn,secondary){var b=document.createElement('button');b.textContent=label;if(secondary)b.className='secondary';b.addEventListener('click',fn);$('dialogActions').appendChild(b);return b}
 function closeDialog(){overlay.hidden=true;state.paused=false;renderSupply()}
@@ -308,7 +340,7 @@ function openDialog(type){state.paused=true;renderSupply();overlay.hidden=false;
   var sel=document.createElement('select');sel.setAttribute('aria-label','Select unlocked level');for(var n=1;n<=state.unlocked;n++){var o=document.createElement('option');o.value=n;o.textContent='Level '+n+' · '+DATA[n-1].name;if(n===state.level)o.selected=true;sel.appendChild(o)}actions.appendChild(sel);
   action('Play selected level',function(){reset(Number(sel.value))});action('Back',closeDialog,true);
  } else {
-  $('dialogTitle').textContent='How to play';$('dialogBody').textContent='Only exposed colours can be picked. Clear the outer outline to uncover the colours behind it. Pick a numbered colour to send a queen conch. It crawls to the picture and places one tile at a time. You can run only FIVE conchs at once. A conch keeps its slot until its number reaches zero. Speed up their crawl with the ▶▶ button. Complete every tile to win.';
+  $('dialogTitle').textContent='How to play';$('dialogBody').textContent='See the full upcoming colour queues by scrolling the three stacks. Only the top card of each stack can be chosen, and buried pixels must be uncovered first. Tap a top numbered colour to send a queen conch. It crawls to the picture and places one tile at a time. You can run only FIVE conchs at once. A conch keeps its slot until its number reaches zero. Speed up their crawl with the ▶▶ button. Complete every tile to win.';
   action('Continue playing',closeDialog);
   action('Choose a level',function(){openDialog('levels')},true);
   action('Restart level',function(){reset(state.level)},true);
@@ -320,7 +352,7 @@ $('speedButton').addEventListener('click',function(){state.speed=state.speed===3
 window.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!overlay.hidden&& !state.ended){closeDialog();return}if(state.paused||state.ended)return;if(/^[123]$/.test(ev.key))choose(Number(ev.key)-1);if(ev.key==='r')reset(state.level)});
 window.addEventListener('resize',function(){state.slots.forEach(function(job){if(!job||!job.worker)return;job.worker.style.transitionDuration='0ms';if(job.last)moveWorker(job.worker,cellCenter(job.last),0);else moveWorker(job.worker,slotCenter(job.slot),0)})});
 // Small deterministic testing interface, does not affect normal gameplay.
-window.__conchTest={state:function(){return {level:state.level,placed:state.placed,total:state.total,slots:state.slots.map(function(j){return j&&{c:j.c,ammo:j.ammo,id:j.id}}),columns:state.pending.map(function(col){return col.length}),speed:state.speed,ended:state.ended,paused:state.paused,unlocked:state.unlocked,reserved:state.reserved.size,offers:state.pending.map(function(col){return col[0]&&{c:col[0].c,ammo:col[0].ammo}})}},choose:choose,setLevel:function(n){reset(n)},speed:function(n){state.speed=Math.max(1,Math.min(3,n));$('speedText').textContent=state.speed+'×'},tileCount:function(){return Object.keys(state.cells).length},exposed:function(c){return reachable(c).length},isExposed:function(x,y){return isExposed({x:x,y:y,key:gridKey(x,y)})},advanceFull:function(){state.slots.forEach(function(j){if(j&&j.worker)j.worker.remove()});state.slots=[null,null,null,null,null];state.placed=state.total;progress();win()},data:function(){return DATA}};
+window.__conchTest={state:function(){return {level:state.level,placed:state.placed,total:state.total,slots:state.slots.map(function(j){return j&&{c:j.c,ammo:j.ammo,id:j.id}}),columns:state.pending.map(function(col){return col.length}),speed:state.speed,ended:state.ended,paused:state.paused,unlocked:state.unlocked,reserved:state.reserved.size,offers:state.pending.map(function(col){return col[0]&&{c:col[0].c,ammo:col[0].ammo,ready:!!(col[0].plan[0]&&isExposed(col[0].plan[0]))}}),queue:state.pending.map(function(col){return col.map(function(card){return {c:card.c,ammo:card.ammo,id:card.id}})})}},choose:choose,setLevel:function(n){reset(n)},speed:function(n){state.speed=Math.max(1,Math.min(3,n));$('speedText').textContent=state.speed+'×'},tileCount:function(){return Object.keys(state.cells).length},exposed:function(c){return reachable(c).length},isExposed:function(x,y){return isExposed({x:x,y:y,key:gridKey(x,y)})},advanceFull:function(){state.slots.forEach(function(j){if(j&&j.worker)j.worker.remove()});state.slots=[null,null,null,null,null];state.placed=state.total;progress();win()},data:function(){return DATA}};
 if(!DATA.length){$('artTitle').textContent='No levels found';$('hint').textContent='The levels.js file did not load.';return}
 state.unlocked=load();reset(1);
 })();
