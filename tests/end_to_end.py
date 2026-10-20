@@ -7,7 +7,7 @@ async def main():
   browser=await p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
   page=await browser.new_page(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
   errors=[]; page.on('pageerror',lambda e:errors.append(str(e)))
-  await page.set_content((ROOT/'conch-crawl-standalone.html').read_text(), wait_until='load')
+  await page.set_content((ROOT/'conch-crawl-standalone.html' if (ROOT/'conch-crawl-standalone.html').exists() else ROOT/'index.html').read_text(), wait_until='load')
   await page.evaluate('window.__conchTest.speed(3)')
   # exercise normal user tapping until victory
   for step in range(3000):
