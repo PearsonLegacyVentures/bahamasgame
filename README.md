@@ -38,3 +38,7 @@ Difficulty increases through picture size, detail, tile count and more color var
 **Not yet verified:** gameplay on a physical iPhone or a live Cloudflare/GitHub Pages deployment.
 
 Artwork is original, stylized Bahamian-themed pixel art. This is a new game inspired by a genre, not an exact copy of another game's engine.
+
+## Exposed colour rule
+
+Colours completely covered by unfinished outer tiles are not selectable. A queen conch works only from the exposed edge inward; as it finishes the outer outline, new colours become available automatically. Each active colour has one conch so jobs cannot claim the same tiles.
